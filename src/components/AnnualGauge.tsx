@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   daysInYear,
   daysInMonth,
@@ -24,7 +24,7 @@ const TOTAL_SLOTS = 31
 const SPEC_OUTER_R = 228   // gap after cells (OUTER_R - CELL_H - 14)
 const SPEC_LINE_LEN = 14
 const SPEC_INNER_R = SPEC_OUTER_R - SPEC_LINE_LEN // 221
-const SPEC_LINE_COUNT_DEFAULT = 288
+// const SPEC_LINE_COUNT_DEFAULT = 288
 const SPEC_R_MID = (SPEC_OUTER_R + SPEC_INNER_R) / 2
 
 // ── Inner ring: analog gauge ──
@@ -194,7 +194,7 @@ export default function AnnualGauge({
   const angles = monthStartAngles(year)
   const { yearAngle } = calcHandAngles(dateSource)
   const { dayAngle } = calcHandAngles(timeSource)
-  const { dateStr, dayOfWeekStr, progressPercent } = formatDate(dateSource)
+  const { dateStr: _dateStr, dayOfWeekStr, progressPercent } = formatDate(dateSource)
   const timeStr = formatTimeDisplay(timeSource, timeFormat)
 
   // Remaining days
@@ -207,7 +207,7 @@ export default function AnnualGauge({
   // 1. Outer ring: monochrome baguette-cut cells
   // ────────────────────────────────────────────
   const slotAngle = 360 / TOTAL_SLOTS
-  const outerCells: JSX.Element[] = []
+  const outerCells: React.JSX.Element[] = []
   const cellOX = CX - CELL_W / 2
   const cellOY = CY - OUTER_R
   const cellPath = baguettePath(cellOX, cellOY, CELL_W, CELL_H, CHAMFER, FLARE)
@@ -229,17 +229,17 @@ export default function AnnualGauge({
     const relLight = ((dayAngle - cellAngle) % 360 + 360) % 360
 
     // Base opacity per state — weekends get slightly brighter cells
-    let base: number, specBase: number, numOpacity: number
+    let base: number, numOpacity: number
     const weekendBoost = isWeekend ? 1.25 : 1.0
 
     if (d === today) {
-      base = 0.22 * weekendBoost; specBase = 0.4
+      base = 0.22 * weekendBoost
       numOpacity = 1.0
     } else if (d < today) {
-      base = 0.14 * weekendBoost; specBase = 0.2
+      base = 0.14 * weekendBoost
       numOpacity = 0.85
     } else {
-      base = 0.04 * weekendBoost; specBase = 0.04
+      base = 0.04 * weekendBoost
       numOpacity = 0.12
     }
 
@@ -325,7 +325,7 @@ export default function AnnualGauge({
   // ────────────────────────────────────────────
   const specCount = spectrumDensity
   const specBarWidth = specCount <= 144 ? 1.2 : specCount <= 480 ? 0.7 : 0.3
-  const specLines: JSX.Element[] = []
+  const specLines: React.JSX.Element[] = []
   for (let i = 0; i < specCount; i++) {
     const angle = (i / specCount) * 360
     const outer = polarToXY(CX, CY, SPEC_OUTER_R, angle)
@@ -377,7 +377,7 @@ export default function AnnualGauge({
   // ────────────────────────────────────────────
   // 3. Inner ring: analog gauge (inward-facing ticks)
   // ────────────────────────────────────────────
-  const ticks: JSX.Element[] = []
+  const ticks: React.JSX.Element[] = []
   for (let d = 1; d <= totalDays; d++) {
     const angle = ((d - 1) / totalDays) * 360
     const dow = getDayOfWeek(year, d)
