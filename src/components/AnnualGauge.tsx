@@ -389,16 +389,15 @@ export default function AnnualGauge({
   }
 
   // ── Sunrise/Sunset markers on spectrum band ──
-  const SOLAR_TEXT_R = SPEC_INNER_R - 14  // time text further inside
-  const sunrisePos = polarToXY(CX, CY, SOLAR_TEXT_R, sunriseAngle)
-  const sunsetPos = polarToXY(CX, CY, SOLAR_TEXT_R, sunsetAngle)
   const sunriseTimeStr = `${String(solar.sunrise.getHours()).padStart(2, '0')}:${String(solar.sunrise.getMinutes()).padStart(2, '0')}`
   const sunsetTimeStr = `${String(solar.sunset.getHours()).padStart(2, '0')}:${String(solar.sunset.getMinutes()).padStart(2, '0')}`
 
-  // Position markers inside the spectrum band
-  const MARKER_R = SPEC_INNER_R - 5
-  const sunriseMarkerPos = polarToXY(CX, CY, MARKER_R, sunriseAngle)
-  const sunsetMarkerPos = polarToXY(CX, CY, MARKER_R, sunsetAngle)
+  // Marker + time at the mid-height of the spectrum gap, time offset along arc
+  const SOLAR_MARKER_OFFSET = 3  // degrees offset for time text next to marker
+  const sunriseMarkerPos = polarToXY(CX, CY, SPEC_R_MID, sunriseAngle)
+  const sunriseTextPos = polarToXY(CX, CY, SPEC_R_MID, sunriseAngle + SOLAR_MARKER_OFFSET)
+  const sunsetMarkerPos = polarToXY(CX, CY, SPEC_R_MID, sunsetAngle)
+  const sunsetTextPos = polarToXY(CX, CY, SPEC_R_MID, sunsetAngle - SOLAR_MARKER_OFFSET)
 
   // ── Time text (HH:MM:SS) curved along spectrum arc ──
   const TIME_OFFSET_DEG = 4
@@ -575,7 +574,7 @@ export default function AnnualGauge({
         {/* Spectrum analyzer band */}
         {specLines}
 
-        {/* Sunrise marker ▲ */}
+        {/* Sunrise marker ▲ + time */}
         <text
           x={sunriseMarkerPos.x} y={sunriseMarkerPos.y}
           fill={ACCENT} opacity={0.7} fontSize="8"
@@ -583,13 +582,13 @@ export default function AnnualGauge({
           transform={`rotate(${sunriseAngle}, ${sunriseMarkerPos.x}, ${sunriseMarkerPos.y})`}
         >▲</text>
         <text
-          x={sunrisePos.x} y={sunrisePos.y}
+          x={sunriseTextPos.x} y={sunriseTextPos.y}
           fill={ACCENT} opacity={0.6} fontSize="8"
           fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
-          transform={`rotate(${sunriseAngle}, ${sunrisePos.x}, ${sunrisePos.y})`}
+          transform={`rotate(${sunriseAngle + SOLAR_MARKER_OFFSET}, ${sunriseTextPos.x}, ${sunriseTextPos.y})`}
         >{sunriseTimeStr}</text>
 
-        {/* Sunset marker ▼ */}
+        {/* Sunset marker ▼ + time */}
         <text
           x={sunsetMarkerPos.x} y={sunsetMarkerPos.y}
           fill={ACCENT_NIGHT} opacity={0.7} fontSize="8"
@@ -597,10 +596,10 @@ export default function AnnualGauge({
           transform={`rotate(${sunsetAngle}, ${sunsetMarkerPos.x}, ${sunsetMarkerPos.y})`}
         >▼</text>
         <text
-          x={sunsetPos.x} y={sunsetPos.y}
+          x={sunsetTextPos.x} y={sunsetTextPos.y}
           fill={ACCENT_NIGHT} opacity={0.6} fontSize="8"
           fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
-          transform={`rotate(${sunsetAngle}, ${sunsetPos.x}, ${sunsetPos.y})`}
+          transform={`rotate(${sunsetAngle - SOLAR_MARKER_OFFSET}, ${sunsetTextPos.x}, ${sunsetTextPos.y})`}
         >{sunsetTimeStr}</text>
 
         {/* Time text zabuton */}
