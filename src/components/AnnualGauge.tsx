@@ -27,7 +27,7 @@ const SPEC_OUTER_R = 228   // gap after cells (OUTER_R - CELL_H - 14)
 const SPEC_LINE_LEN = 14
 const SPEC_INNER_R = SPEC_OUTER_R - SPEC_LINE_LEN // 221
 // const SPEC_LINE_COUNT_DEFAULT = 288
-const SPEC_R_MID = (SPEC_OUTER_R + SPEC_INNER_R) / 2 - 1.5  // slightly inward for text centering
+const SPEC_R_MID = (SPEC_OUTER_R + SPEC_INNER_R) / 2 - 3  // centered vertically in spectrum band
 
 // ── Inner ring: analog gauge ──
 const INNER_R = 199        // gap after spectrum
@@ -403,7 +403,7 @@ export default function AnnualGauge({
   // ── Time text (HH:MM:SS) curved along spectrum arc ──
   // Right half (0-180°): text reads outward (clockwise arc)
   // Left half (180-360°): text reads inward (arc drawn in reverse so text flips)
-  const TIME_OFFSET_DEG = 4
+  const TIME_OFFSET_DEG = 2
   const TIME_ARC_SPAN = 40
   const textStartDeg = dayAngle + TIME_OFFSET_DEG
   // Use bottom half for the flip boundary (text upside-down threshold)
@@ -615,8 +615,10 @@ export default function AnnualGauge({
             transform={`rotate(${zabutonAngle}, ${zabutonPos.x}, ${zabutonPos.y})`} />
         )}
 
-        {/* Time text curved along spectrum arc */}
-        <text fontSize="10" fontFamily={FONT_MONO} fontWeight="400" fill={ACCENT} opacity={0.85} letterSpacing="1">
+        {/* Time text curved along spectrum arc — color follows day/night */}
+        <text fontSize="10" fontFamily={FONT_MONO} fontWeight="400"
+          fill={isDaytime(dayAngle) ? ACCENT : isTwilight(dayAngle) ? '#8a6a5a' : ACCENT_NIGHT}
+          opacity={0.85} letterSpacing="1">
           <textPath href="#time-arc" startOffset={!needsFlipText ? '0%' : '100%'} textAnchor={!needsFlipText ? 'start' : 'end'}>
             {timeStr}
           </textPath>
