@@ -196,8 +196,6 @@ export default function AnnualGauge({
   const solar = useMemo(() => getSolarTimes(dateSource, loc), [dateSource, loc])
   const sunriseAngle = timeToAngle(solar.sunrise)
   const sunsetAngle = timeToAngle(solar.sunset)
-  const dawnAngle = timeToAngle(solar.dawn)
-  const duskAngle = timeToAngle(solar.dusk)
 
   const year = dateSource.getFullYear()
   const month = dateSource.getMonth() + 1
@@ -340,10 +338,8 @@ export default function AnnualGauge({
   const specBarWidth = specCount <= 144 ? 1.2 : specCount <= 480 ? 0.7 : 0.3
   const specLines: React.JSX.Element[] = []
 
-  // Helper: determine if an angle is in daytime, twilight, or night
+  // Helper: determine if an angle is in daytime
   const isDaytime = (a: number) => a >= sunriseAngle && a <= sunsetAngle
-  const isTwilight = (a: number) =>
-    (a >= dawnAngle && a < sunriseAngle) || (a > sunsetAngle && a <= duskAngle)
 
   for (let i = 0; i < specCount; i++) {
     const angle = (i / specCount) * 360
