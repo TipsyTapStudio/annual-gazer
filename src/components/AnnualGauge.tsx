@@ -394,7 +394,7 @@ export default function AnnualGauge({
 
   // Marker + time in the gap between inner ticks (365-day) and spectrum band (24h)
   const SOLAR_GAP_R = (INNER_R + SPEC_INNER_R) / 2  // midpoint of gap between day bar and 24h bar
-  const SOLAR_MARKER_OFFSET = 3.5  // degrees offset for time text next to marker
+  const SOLAR_MARKER_OFFSET = 5  // degrees offset for time text next to marker
   const sunriseMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle)
   const sunriseTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle + SOLAR_MARKER_OFFSET)
   const sunsetMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle)
