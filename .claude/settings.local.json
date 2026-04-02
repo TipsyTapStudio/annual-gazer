@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(npx --yes create-vite@latest temp-init --template react-ts)",
+      "Bash(npm install:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(netstat -ano)",
+      "Bash(taskkill //PID 22820 //F)",
+      "Bash(xargs wc:*)",
+      "WebSearch",
+      "Bash(git -C \"C:\\\\Users\\\\sfchg\\\\Desktop\\\\annual-gazer\" status)",
+      "Bash(dir \"C:\\\\Users\\\\sfchg\\\\Desktop\\\\annual-gazer\\\\.git\")",
+      "Bash(git init:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}

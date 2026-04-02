@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* DSEG7 Classic — 7-segment digital font */
+@font-face {
+  font-family: 'DSEG7 Classic';
+  src: url('/node_modules/dseg/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff2') format('woff2'),
+       url('/node_modules/dseg/fonts/DSEG7-Classic/DSEG7Classic-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DSEG7 Classic';
+  src: url('/node_modules/dseg/fonts/DSEG7-Classic/DSEG7Classic-Light.woff2') format('woff2'),
+       url('/node_modules/dseg/fonts/DSEG7-Classic/DSEG7Classic-Light.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-bg: #0a0a0a;
+  --color-fg: #e8e8e8;
+  --color-accent: #c0785a;
+  --color-muted: #555555;
+  --color-dim: #333333;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
