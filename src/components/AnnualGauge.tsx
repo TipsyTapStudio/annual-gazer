@@ -392,12 +392,13 @@ export default function AnnualGauge({
   const sunriseTimeStr = `${String(solar.sunrise.getHours()).padStart(2, '0')}:${String(solar.sunrise.getMinutes()).padStart(2, '0')}`
   const sunsetTimeStr = `${String(solar.sunset.getHours()).padStart(2, '0')}:${String(solar.sunset.getMinutes()).padStart(2, '0')}`
 
-  // Marker + time at the mid-height of the spectrum gap, time offset along arc
-  const SOLAR_MARKER_OFFSET = 3  // degrees offset for time text next to marker
-  const sunriseMarkerPos = polarToXY(CX, CY, SPEC_R_MID, sunriseAngle)
-  const sunriseTextPos = polarToXY(CX, CY, SPEC_R_MID, sunriseAngle + SOLAR_MARKER_OFFSET)
-  const sunsetMarkerPos = polarToXY(CX, CY, SPEC_R_MID, sunsetAngle)
-  const sunsetTextPos = polarToXY(CX, CY, SPEC_R_MID, sunsetAngle - SOLAR_MARKER_OFFSET)
+  // Marker + time in the gap between baguette cells and spectrum band
+  const SOLAR_GAP_R = (OUTER_R - CELL_H + SPEC_OUTER_R) / 2  // midpoint of gap
+  const SOLAR_MARKER_OFFSET = 7  // degrees offset for time text next to marker
+  const sunriseMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle)
+  const sunriseTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle + SOLAR_MARKER_OFFSET)
+  const sunsetMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle)
+  const sunsetTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle - SOLAR_MARKER_OFFSET)
 
   // ── Time text (HH:MM:SS) curved along spectrum arc ──
   const TIME_OFFSET_DEG = 4
