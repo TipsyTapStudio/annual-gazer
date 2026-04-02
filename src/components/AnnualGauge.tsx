@@ -398,7 +398,7 @@ export default function AnnualGauge({
   const sunriseMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle)
   const sunriseTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle + SOLAR_MARKER_OFFSET)
   const sunsetMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle)
-  const sunsetTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle - SOLAR_MARKER_OFFSET)
+  const sunsetTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle + SOLAR_MARKER_OFFSET)
 
   // ── Time text (HH:MM:SS) curved along spectrum arc ──
   const TIME_OFFSET_DEG = 4
@@ -600,7 +600,7 @@ export default function AnnualGauge({
           x={sunsetTextPos.x} y={sunsetTextPos.y}
           fill={ACCENT_NIGHT} opacity={0.6} fontSize="8"
           fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
-          transform={`rotate(${sunsetAngle - SOLAR_MARKER_OFFSET}, ${sunsetTextPos.x}, ${sunsetTextPos.y})`}
+          transform={`rotate(${sunsetAngle + SOLAR_MARKER_OFFSET}, ${sunsetTextPos.x}, ${sunsetTextPos.y})`}
         >{sunsetTimeStr}</text>
 
         {/* Time text zabuton */}
