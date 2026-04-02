@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import type { TimeFormat, SpectrumDensity } from './AnnualGauge'
+import type { Location } from '../utils/solarUtils'
 
 interface SettingsPanelProps {
   variant: 'desktop' | 'mobile'
@@ -10,6 +12,8 @@ interface SettingsPanelProps {
   onTimeFormatChange: (f: TimeFormat) => void
   spectrumDensity: SpectrumDensity
   onSpectrumDensityChange: (d: SpectrumDensity) => void
+  location: Location
+  onLocationChange: (loc: Location) => void
   debugMode: boolean
   onDebugModeChange: (on: boolean) => void
   debugDate: string
@@ -36,6 +40,17 @@ const radioLabel = 'flex items-center gap-2 text-[12px] text-white/60 cursor-poi
 const radioInput = 'accent-[#c0785a] w-3 h-3'
 const disabledBadge = 'ml-1.5 text-[9px] tracking-[1px] text-white/20 uppercase'
 
+// Preset cities for quick selection
+const PRESET_CITIES: { name: string; lat: number; lng: number }[] = [
+  { name: 'Tokyo', lat: 35.68, lng: 139.65 },
+  { name: 'Osaka', lat: 34.69, lng: 135.50 },
+  { name: 'New York', lat: 40.71, lng: -74.01 },
+  { name: 'London', lat: 51.51, lng: -0.13 },
+  { name: 'Paris', lat: 48.86, lng: 2.35 },
+  { name: 'Sydney', lat: -33.87, lng: 151.21 },
+  { name: 'Singapore', lat: 1.35, lng: 103.82 },
+]
+
 export default function SettingsPanel({
   variant,
   isOpen,
@@ -46,6 +61,8 @@ export default function SettingsPanel({
   onTimeFormatChange,
   spectrumDensity,
   onSpectrumDensityChange,
+  location,
+  onLocationChange,
   debugMode,
   onDebugModeChange,
   debugDate,
@@ -53,6 +70,35 @@ export default function SettingsPanel({
   debugTime,
   onDebugTimeChange,
 }: SettingsPanelProps) {
+  const [manualLat, setManualLat] = useState(String(location.lat))
+  const [manualLng, setManualLng] = useState(String(location.lng))
+  const [geoLoading, setGeoLoading] = useState(false)
+
+  const handleDetectLocation = () => {
+    if (!navigator.geolocation) return
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = Math.round(pos.coords.latitude * 100) / 100
+        const lng = Math.round(pos.coords.longitude * 100) / 100
+        onLocationChange({ lat, lng, name: `${lat}, ${lng}` })
+        setManualLat(String(lat))
+        setManualLng(String(lng))
+        setGeoLoading(false)
+      },
+      () => setGeoLoading(false),
+      { timeout: 8000 }
+    )
+  }
+
+  const handleManualApply = () => {
+    const lat = parseFloat(manualLat)
+    const lng = parseFloat(manualLng)
+    if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+      onLocationChange({ lat, lng, name: `${lat}, ${lng}` })
+    }
+  }
+
   const isDesktop = variant === 'desktop'
 
   // Desktop: static inside flex container, always rendered at 300px (parent clips)
@@ -175,6 +221,80 @@ export default function SettingsPanel({
               <option value={480}>480 (3 min)</option>
               <option value={1440}>1440 (1 min)</option>
             </select>
+          </div>
+        </div>
+
+        {/* ── LOCATION ── */}
+        <div className={sectionLine}>
+          <div className={sectionTitle}>Location</div>
+
+          <div className="mb-3">
+            <div className={labelStyle}>
+              Current: <span className="text-white/60">{location.name}</span>
+              <span className="text-white/20 text-[10px] ml-1">
+                ({location.lat}, {location.lng})
+              </span>
+            </div>
+          </div>
+
+          {/* Preset cities */}
+          <div className="mb-3">
+            <div className={labelStyle}>City</div>
+            <select
+              className={selectStyle}
+              value=""
+              onChange={(e) => {
+                const city = PRESET_CITIES.find(c => c.name === e.target.value)
+                if (city) {
+                  onLocationChange({ lat: city.lat, lng: city.lng, name: city.name })
+                  setManualLat(String(city.lat))
+                  setManualLng(String(city.lng))
+                }
+              }}
+            >
+              <option value="" disabled>Select a city...</option>
+              {PRESET_CITIES.map(c => (
+                <option key={c.name} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Auto-detect */}
+          <div className="mb-3">
+            <button
+              onClick={handleDetectLocation}
+              disabled={geoLoading}
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded px-2.5 py-1.5 text-[12px] text-white/60 hover:text-white/80 hover:bg-white/[0.1] transition-colors cursor-pointer disabled:opacity-30"
+            >
+              {geoLoading ? 'Detecting...' : '📍 Detect my location'}
+            </button>
+          </div>
+
+          {/* Manual lat/lng */}
+          <div className="mb-2">
+            <div className={labelStyle}>Manual coordinates</div>
+            <div className="flex gap-2 mb-1.5">
+              <input
+                type="text"
+                placeholder="Lat"
+                className={selectStyle + ' flex-1'}
+                value={manualLat}
+                onChange={(e) => setManualLat(e.target.value)}
+              />
+              <input
+                type="text"
+                placeholder="Lng"
+                className={selectStyle + ' flex-1'}
+                value={manualLng}
+                onChange={(e) => setManualLng(e.target.value)}
+              />
+            </div>
+            <button
+              onClick={handleManualApply}
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded px-2.5 py-1 text-[11px] text-white/50 hover:text-white/70 hover:bg-white/[0.08] transition-colors cursor-pointer"
+            >
+              Apply
+            </button>
           </div>
         </div>
 

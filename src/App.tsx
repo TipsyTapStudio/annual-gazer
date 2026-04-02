@@ -3,6 +3,9 @@ import AnnualGauge from './components/AnnualGauge'
 import type { TimeFormat, SpectrumDensity } from './components/AnnualGauge'
 import GearIcon from './components/GearIcon'
 import SettingsPanel from './components/SettingsPanel'
+import { usePersistedState } from './hooks/usePersistedState'
+import { DEFAULT_LOCATION } from './utils/solarUtils'
+import type { Location } from './utils/solarUtils'
 
 function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
@@ -18,15 +21,22 @@ function useMediaQuery(query: string): boolean {
 function App() {
   const isDesktop = useMediaQuery('(min-width: 768px)')
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [startMonth, setStartMonth] = useState(1)
-  const [timeFormat, setTimeFormat] = useState<TimeFormat>('HH:MM:SS')
-  const [spectrumDensity, setSpectrumDensity] = useState<SpectrumDensity>(288)
+
+  // Persisted settings
+  const [startMonth, setStartMonth] = usePersistedState('ag-startMonth', 1)
+  const [timeFormat, setTimeFormat] = usePersistedState<TimeFormat>('ag-timeFormat', 'HH:MM:SS')
+  const [spectrumDensity, setSpectrumDensity] = usePersistedState<SpectrumDensity>('ag-spectrumDensity', 288)
+  const [location, setLocation] = usePersistedState<Location>('ag-location', DEFAULT_LOCATION)
+
+  // Debug (not persisted)
   const [debugMode, setDebugMode] = useState(false)
   const [debugDate, setDebugDate] = useState(() => {
     const d = new Date()
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   })
   const [debugTime, setDebugTime] = useState('')
+
+  // Gear icon visibility
   const [gearVisible, setGearVisible] = useState(false)
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -39,6 +49,25 @@ function App() {
   useEffect(() => {
     return () => { if (idleTimer.current) clearTimeout(idleTimer.current) }
   }, [])
+
+  // Geolocation: auto-detect on first visit (if no saved location)
+  const [geoRequested, setGeoRequested] = usePersistedState('ag-geoRequested', false)
+  useEffect(() => {
+    if (geoRequested) return
+    if (!navigator.geolocation) return
+    setGeoRequested(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocation({
+          lat: Math.round(pos.coords.latitude * 100) / 100,
+          lng: Math.round(pos.coords.longitude * 100) / 100,
+          name: `${pos.coords.latitude.toFixed(2)}, ${pos.coords.longitude.toFixed(2)}`,
+        })
+      },
+      () => { /* user denied or error — keep default */ },
+      { timeout: 5000 }
+    )
+  }, [geoRequested, setGeoRequested, setLocation])
 
   let overrideDate: Date | null = null
   let overrideDateOnly: Date | null = null
@@ -68,6 +97,8 @@ function App() {
     onTimeFormatChange: setTimeFormat,
     spectrumDensity,
     onSpectrumDensityChange: setSpectrumDensity,
+    location,
+    onLocationChange: setLocation,
     debugMode,
     onDebugModeChange: handleDebugModeChange,
     debugDate,
@@ -88,11 +119,11 @@ function App() {
           overrideDateOnly={overrideDateOnly}
           timeFormat={timeFormat}
           spectrumDensity={spectrumDensity}
+          location={location}
         />
       </div>
 
       {isDesktop ? (
-        /* Desktop: flex sibling that pushes gauge left */
         <div
           className="h-full shrink-0 transition-[width] duration-300 ease-in-out overflow-hidden"
           style={{ width: settingsOpen ? '300px' : '0px' }}
@@ -100,11 +131,9 @@ function App() {
           <SettingsPanel variant="desktop" {...panelProps} />
         </div>
       ) : (
-        /* Mobile: full-screen overlay */
         <SettingsPanel variant="mobile" {...panelProps} />
       )}
 
-      {/* Gear button — hidden when panel is open */}
       {!settingsOpen && (
         <button
           onClick={() => setSettingsOpen(true)}
@@ -116,7 +145,6 @@ function App() {
         </button>
       )}
 
-      {/* DEBUG badge */}
       {debugMode && (
         <div className="fixed top-6 right-16 z-[60] text-[9px] tracking-[2px] uppercase text-white/40">
           DEBUG

@@ -162,17 +162,22 @@ function formatTimeDisplay(date: Date, format: TimeFormat): string {
 
 export type SpectrumDensity = 96 | 144 | 288 | 480 | 1440
 
+import type { Location } from '../utils/solarUtils'
+
 interface AnnualGaugeProps {
   overrideDate?: Date | null
   overrideDateOnly?: Date | null
   timeFormat?: TimeFormat
   spectrumDensity?: SpectrumDensity
+  location?: Location
 }
 
 export default function AnnualGauge({
   overrideDate,
   overrideDateOnly,
   timeFormat = 'HH:MM:SS',
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  location,
   spectrumDensity = 288,
 }: AnnualGaugeProps) {
   const [now, setNow] = useState(() => new Date())
