@@ -27,7 +27,7 @@ const SPEC_OUTER_R = 228   // gap after cells (OUTER_R - CELL_H - 14)
 const SPEC_LINE_LEN = 14
 const SPEC_INNER_R = SPEC_OUTER_R - SPEC_LINE_LEN // 221
 // const SPEC_LINE_COUNT_DEFAULT = 288
-const SPEC_R_MID = (SPEC_OUTER_R + SPEC_INNER_R) / 2
+const SPEC_R_MID = (SPEC_OUTER_R + SPEC_INNER_R) / 2 - 1.5  // slightly inward for text centering
 
 // ── Inner ring: analog gauge ──
 const INNER_R = 199        // gap after spectrum
