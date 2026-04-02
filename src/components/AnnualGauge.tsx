@@ -392,8 +392,8 @@ export default function AnnualGauge({
   const sunriseTimeStr = `${String(solar.sunrise.getHours()).padStart(2, '0')}:${String(solar.sunrise.getMinutes()).padStart(2, '0')}`
   const sunsetTimeStr = `${String(solar.sunset.getHours()).padStart(2, '0')}:${String(solar.sunset.getMinutes()).padStart(2, '0')}`
 
-  // Marker + time in the gap between baguette cells and spectrum band
-  const SOLAR_GAP_R = (OUTER_R - CELL_H + SPEC_OUTER_R) / 2  // midpoint of gap
+  // Marker + time in the gap between inner ticks (365-day) and spectrum band (24h)
+  const SOLAR_GAP_R = (INNER_R + SPEC_INNER_R) / 2  // midpoint of gap between day bar and 24h bar
   const SOLAR_MARKER_OFFSET = 7  // degrees offset for time text next to marker
   const sunriseMarkerPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle)
   const sunriseTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunriseAngle + SOLAR_MARKER_OFFSET)
