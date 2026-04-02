@@ -365,12 +365,10 @@ export default function AnnualGauge({
       barColor = ACCENT_NIGHT     // cool blue-gray for night
     }
 
-    // Gradient: bars near tip are brighter, older bars dimmer
+    // Uniform brightness for lit bars — no gradient to keep sunrise/sunset boundary clear
     let opacity: number
     if (isLit) {
-      const distFromTip = dayAngle - angle
-      const gradientFactor = Math.max(0.25, 1 - distFromTip / 360)
-      opacity = 0.3 + 0.5 * gradientFactor
+      opacity = 0.55
     } else {
       opacity = 0.03
     }
