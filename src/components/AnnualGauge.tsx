@@ -401,16 +401,21 @@ export default function AnnualGauge({
   const sunsetTextPos = polarToXY(CX, CY, SOLAR_GAP_R, sunsetAngle + SOLAR_MARKER_OFFSET)
 
   // ── Time text (HH:MM:SS) curved along spectrum arc ──
+  // Right half (0-180°): text reads outward (clockwise arc)
+  // Left half (180-360°): text reads inward (arc drawn in reverse so text flips)
   const TIME_OFFSET_DEG = 4
   const TIME_ARC_SPAN = 40
   const textStartDeg = dayAngle + TIME_OFFSET_DEG
-  const isRightHalf = dayAngle <= 180
+  // Use bottom half for the flip boundary (text upside-down threshold)
+  const needsFlipText = dayAngle > 90 && dayAngle < 270
   let timeArcD: string
-  if (isRightHalf) {
+  if (!needsFlipText) {
+    // Top half: clockwise arc, text reads left-to-right
     const s = polarToXY(CX, CY, SPEC_R_MID, textStartDeg)
     const e = polarToXY(CX, CY, SPEC_R_MID, textStartDeg + TIME_ARC_SPAN)
     timeArcD = `M ${s.x} ${s.y} A ${SPEC_R_MID} ${SPEC_R_MID} 0 0 1 ${e.x} ${e.y}`
   } else {
+    // Bottom half: reverse arc so text flips to stay readable
     const s = polarToXY(CX, CY, SPEC_R_MID, textStartDeg + TIME_ARC_SPAN)
     const e = polarToXY(CX, CY, SPEC_R_MID, textStartDeg)
     timeArcD = `M ${s.x} ${s.y} A ${SPEC_R_MID} ${SPEC_R_MID} 0 0 0 ${e.x} ${e.y}`
@@ -612,7 +617,7 @@ export default function AnnualGauge({
 
         {/* Time text curved along spectrum arc */}
         <text fontSize="10" fontFamily={FONT_MONO} fontWeight="400" fill={ACCENT} opacity={0.85} letterSpacing="1">
-          <textPath href="#time-arc" startOffset={isRightHalf ? '0%' : '100%'} textAnchor={isRightHalf ? 'start' : 'end'}>
+          <textPath href="#time-arc" startOffset={!needsFlipText ? '0%' : '100%'} textAnchor={!needsFlipText ? 'start' : 'end'}>
             {timeStr}
           </textPath>
         </text>
