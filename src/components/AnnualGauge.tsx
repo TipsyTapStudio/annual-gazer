@@ -351,16 +351,13 @@ export default function AnnualGauge({
     const inner = polarToXY(CX, CY, SPEC_INNER_R, angle)
     const isLit = angle <= dayAngle
 
-    // Day/night/twilight color for lit bars
+    // Day/night color for lit bars — sharp boundary at sunrise/sunset
     const daytime = isDaytime(angle)
-    const twilight = isTwilight(angle)
     let barColor: string
     if (!isLit) {
       barColor = '#ffffff'
     } else if (daytime) {
       barColor = ACCENT           // warm copper for daylight
-    } else if (twilight) {
-      barColor = '#8a6a5a'        // muted warm for twilight transition
     } else {
       barColor = ACCENT_NIGHT     // cool blue-gray for night
     }
@@ -615,7 +612,7 @@ export default function AnnualGauge({
 
         {/* Time text curved along spectrum arc — color follows day/night */}
         <text fontSize="10" fontFamily={FONT_MONO} fontWeight="400"
-          fill={isDaytime(dayAngle) ? ACCENT : isTwilight(dayAngle) ? '#8a6a5a' : ACCENT_NIGHT}
+          fill={isDaytime(dayAngle) ? ACCENT : ACCENT_NIGHT}
           opacity={0.85} letterSpacing="1">
           <textPath href="#time-arc" startOffset={!needsFlipText ? '0%' : '100%'} textAnchor={!needsFlipText ? 'start' : 'end'}>
             {timeStr}
