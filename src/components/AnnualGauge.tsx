@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   daysInYear,
   daysInMonth,
@@ -8,6 +8,8 @@ import {
   formatDate,
   calcHandAngles,
 } from '../utils/dateUtils'
+import { getSolarTimes, timeToAngle, DEFAULT_LOCATION } from '../utils/solarUtils'
+import type { Location } from '../utils/solarUtils'
 
 const SIZE = 600
 const CX = SIZE / 2
@@ -48,6 +50,7 @@ const MUTED = '#555555'
 const DIM = '#3a3a3a'
 const BG = '#0a0a0a'
 
+const ACCENT_NIGHT = '#5a7a9a' // cool blue-gray for nighttime spectrum bars
 const TRANSITION = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
 const FONT_ENGRAVE = "'Barlow Condensed', 'Arial Narrow', sans-serif"
 const FONT_MONO = "'SF Mono', 'Consolas', monospace"
@@ -162,8 +165,6 @@ function formatTimeDisplay(date: Date, format: TimeFormat): string {
 
 export type SpectrumDensity = 96 | 144 | 288 | 480 | 1440
 
-import type { Location } from '../utils/solarUtils'
-
 interface AnnualGaugeProps {
   overrideDate?: Date | null
   overrideDateOnly?: Date | null
@@ -176,8 +177,7 @@ export default function AnnualGauge({
   overrideDate,
   overrideDateOnly,
   timeFormat = 'HH:MM:SS',
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  location,
+  location: locationProp,
   spectrumDensity = 288,
 }: AnnualGaugeProps) {
   const [now, setNow] = useState(() => new Date())
@@ -190,6 +190,14 @@ export default function AnnualGauge({
 
   const dateSource = overrideDate ?? overrideDateOnly ?? now
   const timeSource = overrideDate ?? now
+  const loc = locationProp ?? DEFAULT_LOCATION
+
+  // Solar times for spectrum bar day/night coloring
+  const solar = useMemo(() => getSolarTimes(dateSource, loc), [dateSource, loc])
+  const sunriseAngle = timeToAngle(solar.sunrise)
+  const sunsetAngle = timeToAngle(solar.sunset)
+  const dawnAngle = timeToAngle(solar.dawn)
+  const duskAngle = timeToAngle(solar.dusk)
 
   const year = dateSource.getFullYear()
   const month = dateSource.getMonth() + 1
@@ -331,27 +339,47 @@ export default function AnnualGauge({
   const specCount = spectrumDensity
   const specBarWidth = specCount <= 144 ? 1.2 : specCount <= 480 ? 0.7 : 0.3
   const specLines: React.JSX.Element[] = []
+
+  // Helper: determine if an angle is in daytime, twilight, or night
+  const isDaytime = (a: number) => a >= sunriseAngle && a <= sunsetAngle
+  const isTwilight = (a: number) =>
+    (a >= dawnAngle && a < sunriseAngle) || (a > sunsetAngle && a <= duskAngle)
+
   for (let i = 0; i < specCount; i++) {
     const angle = (i / specCount) * 360
     const outer = polarToXY(CX, CY, SPEC_OUTER_R, angle)
     const inner = polarToXY(CX, CY, SPEC_INNER_R, angle)
     const isLit = angle <= dayAngle
 
+    // Day/night/twilight color for lit bars
+    const daytime = isDaytime(angle)
+    const twilight = isTwilight(angle)
+    let barColor: string
+    if (!isLit) {
+      barColor = '#ffffff'
+    } else if (daytime) {
+      barColor = ACCENT           // warm copper for daylight
+    } else if (twilight) {
+      barColor = '#8a6a5a'        // muted warm for twilight transition
+    } else {
+      barColor = ACCENT_NIGHT     // cool blue-gray for night
+    }
+
     // Gradient: bars near tip are brighter, older bars dimmer
     let opacity: number
     if (isLit) {
-      const distFromTip = dayAngle - angle // 0 at tip, large at old bars
+      const distFromTip = dayAngle - angle
       const gradientFactor = Math.max(0.25, 1 - distFromTip / 360)
-      opacity = 0.3 + 0.5 * gradientFactor // range: 0.3 to 0.8
+      opacity = 0.3 + 0.5 * gradientFactor
     } else {
-      opacity = 0.03 // v1.4: nearly invisible unlit bars
+      opacity = 0.03
     }
 
     specLines.push(
       <line
         key={`spec-${i}`}
         x1={outer.x} y1={outer.y} x2={inner.x} y2={inner.y}
-        stroke={isLit ? ACCENT : '#ffffff'}
+        stroke={barColor}
         strokeWidth={specBarWidth}
         strokeLinecap="butt"
         opacity={opacity}
@@ -359,6 +387,17 @@ export default function AnnualGauge({
       />
     )
   }
+
+  // ── Sunrise/Sunset markers on spectrum band ──
+  const sunrisePos = polarToXY(CX, CY, SPEC_R_MID, sunriseAngle)
+  const sunsetPos = polarToXY(CX, CY, SPEC_R_MID, sunsetAngle)
+  const sunriseTimeStr = `${String(solar.sunrise.getHours()).padStart(2, '0')}:${String(solar.sunrise.getMinutes()).padStart(2, '0')}`
+  const sunsetTimeStr = `${String(solar.sunset.getHours()).padStart(2, '0')}:${String(solar.sunset.getMinutes()).padStart(2, '0')}`
+
+  // Position markers slightly outside the spectrum band
+  const MARKER_R = SPEC_OUTER_R + 3
+  const sunriseMarkerPos = polarToXY(CX, CY, MARKER_R, sunriseAngle)
+  const sunsetMarkerPos = polarToXY(CX, CY, MARKER_R, sunsetAngle)
 
   // ── Time text (HH:MM:SS) curved along spectrum arc ──
   const TIME_OFFSET_DEG = 4
@@ -534,6 +573,34 @@ export default function AnnualGauge({
 
         {/* Spectrum analyzer band */}
         {specLines}
+
+        {/* Sunrise marker ▲ */}
+        <text
+          x={sunriseMarkerPos.x} y={sunriseMarkerPos.y}
+          fill={ACCENT} opacity={0.5} fontSize="6"
+          fontFamily={FONT_SANS} textAnchor="middle" dominantBaseline="central"
+          transform={`rotate(${sunriseAngle}, ${sunriseMarkerPos.x}, ${sunriseMarkerPos.y})`}
+        >▲</text>
+        <text
+          x={sunrisePos.x} y={sunrisePos.y}
+          fill={ACCENT} opacity={0.4} fontSize="7"
+          fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
+          transform={`rotate(${sunriseAngle}, ${sunrisePos.x}, ${sunrisePos.y})`}
+        >{sunriseTimeStr}</text>
+
+        {/* Sunset marker ▼ */}
+        <text
+          x={sunsetMarkerPos.x} y={sunsetMarkerPos.y}
+          fill={ACCENT_NIGHT} opacity={0.5} fontSize="6"
+          fontFamily={FONT_SANS} textAnchor="middle" dominantBaseline="central"
+          transform={`rotate(${sunsetAngle}, ${sunsetMarkerPos.x}, ${sunsetMarkerPos.y})`}
+        >▼</text>
+        <text
+          x={sunsetPos.x} y={sunsetPos.y}
+          fill={ACCENT_NIGHT} opacity={0.4} fontSize="7"
+          fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
+          transform={`rotate(${sunsetAngle}, ${sunsetPos.x}, ${sunsetPos.y})`}
+        >{sunsetTimeStr}</text>
 
         {/* Time text zabuton */}
         {needsZabuton && (
