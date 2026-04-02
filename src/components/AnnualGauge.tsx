@@ -389,13 +389,14 @@ export default function AnnualGauge({
   }
 
   // ── Sunrise/Sunset markers on spectrum band ──
-  const sunrisePos = polarToXY(CX, CY, SPEC_R_MID, sunriseAngle)
-  const sunsetPos = polarToXY(CX, CY, SPEC_R_MID, sunsetAngle)
+  const SOLAR_TEXT_R = SPEC_INNER_R - 14  // time text further inside
+  const sunrisePos = polarToXY(CX, CY, SOLAR_TEXT_R, sunriseAngle)
+  const sunsetPos = polarToXY(CX, CY, SOLAR_TEXT_R, sunsetAngle)
   const sunriseTimeStr = `${String(solar.sunrise.getHours()).padStart(2, '0')}:${String(solar.sunrise.getMinutes()).padStart(2, '0')}`
   const sunsetTimeStr = `${String(solar.sunset.getHours()).padStart(2, '0')}:${String(solar.sunset.getMinutes()).padStart(2, '0')}`
 
-  // Position markers slightly outside the spectrum band
-  const MARKER_R = SPEC_OUTER_R + 3
+  // Position markers inside the spectrum band
+  const MARKER_R = SPEC_INNER_R - 5
   const sunriseMarkerPos = polarToXY(CX, CY, MARKER_R, sunriseAngle)
   const sunsetMarkerPos = polarToXY(CX, CY, MARKER_R, sunsetAngle)
 
@@ -577,13 +578,13 @@ export default function AnnualGauge({
         {/* Sunrise marker ▲ */}
         <text
           x={sunriseMarkerPos.x} y={sunriseMarkerPos.y}
-          fill={ACCENT} opacity={0.5} fontSize="6"
+          fill={ACCENT} opacity={0.7} fontSize="8"
           fontFamily={FONT_SANS} textAnchor="middle" dominantBaseline="central"
           transform={`rotate(${sunriseAngle}, ${sunriseMarkerPos.x}, ${sunriseMarkerPos.y})`}
         >▲</text>
         <text
           x={sunrisePos.x} y={sunrisePos.y}
-          fill={ACCENT} opacity={0.4} fontSize="7"
+          fill={ACCENT} opacity={0.6} fontSize="8"
           fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
           transform={`rotate(${sunriseAngle}, ${sunrisePos.x}, ${sunrisePos.y})`}
         >{sunriseTimeStr}</text>
@@ -591,13 +592,13 @@ export default function AnnualGauge({
         {/* Sunset marker ▼ */}
         <text
           x={sunsetMarkerPos.x} y={sunsetMarkerPos.y}
-          fill={ACCENT_NIGHT} opacity={0.5} fontSize="6"
+          fill={ACCENT_NIGHT} opacity={0.7} fontSize="8"
           fontFamily={FONT_SANS} textAnchor="middle" dominantBaseline="central"
           transform={`rotate(${sunsetAngle}, ${sunsetMarkerPos.x}, ${sunsetMarkerPos.y})`}
         >▼</text>
         <text
           x={sunsetPos.x} y={sunsetPos.y}
-          fill={ACCENT_NIGHT} opacity={0.4} fontSize="7"
+          fill={ACCENT_NIGHT} opacity={0.6} fontSize="8"
           fontFamily={FONT_MONO} fontWeight="400" textAnchor="middle" dominantBaseline="central"
           transform={`rotate(${sunsetAngle}, ${sunsetPos.x}, ${sunsetPos.y})`}
         >{sunsetTimeStr}</text>
