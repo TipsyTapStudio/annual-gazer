@@ -192,11 +192,21 @@ export default function AnnualGauge({
 }: AnnualGaugeProps) {
   const [now, setNow] = useState(() => new Date())
 
+  const [subPage, setSubPage] = useState(0)
+
   useEffect(() => {
     if (overrideDate) return
     const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
   }, [overrideDate])
+
+  // Auto-cycle sub-display pages
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSubPage(p => (p + 1) % 3)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [])
 
   const dateSource = overrideDate ?? overrideDateOnly ?? now
   const timeSource = overrideDate ?? now
@@ -522,6 +532,15 @@ export default function AnnualGauge({
   const L2_Y = L1_Y + WIN_H + WIN_GAP  // date windows right below (gap = same as cell gap)
   const L3_Y = CY + 10     // time display — lower center
 
+  // Layer 4-5: sub-display area
+  const SUB_TOP = L3_Y + 22     // below time display
+  const SUB_BOTTOM = CY + 105   // near bottom of guide circle, can exceed
+  const SUB_H = SUB_BOTTOM - SUB_TOP
+  const SUB_W = WIN_TOTAL       // same width as date windows (177px)
+  const SUB_X = CX - SUB_W / 2
+  const SUB_PAGES = 3           // number of info pages
+  const DOT_Y = SUB_BOTTOM + 8  // page dots below sub-display
+
   // Ghost text for 7-seg
   const seg7Ghost = timeFormat === 'HH:MM:SS' ? '88:88:88' : '88:88'
   const yearDigits = String(year).split('')  // ['2','0','2','6']
@@ -760,7 +779,27 @@ export default function AnnualGauge({
           </>
         )}
 
-        {/* ══════ Layer 4-5: TBD ══════ */}
+        {/* ══════ Layer 4-5: Sub-display ══════ */}
+        <rect x={SUB_X} y={SUB_TOP} width={SUB_W} height={SUB_H} rx={3}
+          fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" strokeWidth={0.5} />
+        <rect x={SUB_X} y={SUB_TOP} width={SUB_W} height={SUB_H} rx={3}
+          fill="url(#cyclops-lens)" />
+
+        {/* Sub-display content placeholder */}
+        <text x={CX} y={SUB_TOP + SUB_H / 2}
+          fill={DIM} opacity={0.3} fontSize="9" fontFamily={FONT_SANS}
+          fontWeight="400" textAnchor="middle" dominantBaseline="central"
+          letterSpacing="1"
+        >{subPage === 0 ? 'LOCATION · SUNRISE · SUNSET' : subPage === 1 ? 'TEMPERATURE · HIGH · LOW' : 'WEATHER'}</text>
+
+        {/* Page indicator dots */}
+        {Array.from({ length: SUB_PAGES }, (_, i) => (
+          <circle key={`dot-${i}`}
+            cx={CX + (i - 1) * 8} cy={DOT_Y} r={1.5}
+            fill={FG} opacity={i === subPage ? 0.5 : 0.12}
+            style={{ transition: 'opacity 0.3s ease' }}
+          />
+        ))}
       </svg>
     </div>
   )
