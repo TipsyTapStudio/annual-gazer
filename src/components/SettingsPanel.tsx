@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { TimeFormat, SpectrumDensity } from './AnnualGauge'
+import type { TimeFormat, HourFormat, SpectrumDensity } from './AnnualGauge'
 import type { Location } from '../utils/solarUtils'
 
 interface SettingsPanelProps {
@@ -12,6 +12,8 @@ interface SettingsPanelProps {
   onTimeFormatChange: (f: TimeFormat) => void
   spectrumDensity: SpectrumDensity
   onSpectrumDensityChange: (d: SpectrumDensity) => void
+  hourFormat: HourFormat
+  onHourFormatChange: (f: HourFormat) => void
   location: Location
   onLocationChange: (loc: Location) => void
   debugMode: boolean
@@ -61,6 +63,8 @@ export default function SettingsPanel({
   onTimeFormatChange,
   spectrumDensity,
   onSpectrumDensityChange,
+  hourFormat,
+  onHourFormatChange,
   location,
   onLocationChange,
   debugMode,
@@ -161,11 +165,12 @@ export default function SettingsPanel({
             </select>
           </div>
 
-          <div className="mb-4 opacity-40">
-            <div className={labelStyle}>
-              Time display<span className={disabledBadge}>v2</span>
-            </div>
-            <select className={selectStyle} disabled value="24h">
+          <div className="mb-4">
+            <div className={labelStyle}>Time display</div>
+            <select className={selectStyle}
+              value={hourFormat}
+              onChange={(e) => onHourFormatChange(e.target.value as HourFormat)}
+            >
               <option value="24h">24 hour</option>
               <option value="12h">12 hour AM/PM</option>
             </select>

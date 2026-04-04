@@ -150,9 +150,17 @@ function edgeOpacity(
 }
 
 export type TimeFormat = 'HH:MM:SS' | 'HH:MM' | 'HH:MM:blink'
+export type HourFormat = '24h' | '12h'
 
-function formatTimeDisplay(date: Date, format: TimeFormat): string {
-  const h = String(date.getHours()).padStart(2, '0')
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const DAY_ABBR = ['SUN','MON','TUE','WED','THU','FRI','SAT']
+
+function formatTimeDisplay(date: Date, format: TimeFormat, hourFormat: HourFormat = '24h'): string {
+  let hours = date.getHours()
+  if (hourFormat === '12h') {
+    hours = hours % 12 || 12
+  }
+  const h = hourFormat === '12h' ? String(hours) : String(hours).padStart(2, '0')
   const m = String(date.getMinutes()).padStart(2, '0')
   if (format === 'HH:MM:SS') {
     return `${h}:${m}:${String(date.getSeconds()).padStart(2, '0')}`
@@ -169,6 +177,7 @@ interface AnnualGaugeProps {
   overrideDate?: Date | null
   overrideDateOnly?: Date | null
   timeFormat?: TimeFormat
+  hourFormat?: HourFormat
   spectrumDensity?: SpectrumDensity
   location?: Location
 }
@@ -177,6 +186,7 @@ export default function AnnualGauge({
   overrideDate,
   overrideDateOnly,
   timeFormat = 'HH:MM:SS',
+  hourFormat = '24h',
   location: locationProp,
   spectrumDensity = 288,
 }: AnnualGaugeProps) {
@@ -206,7 +216,8 @@ export default function AnnualGauge({
   const { yearAngle } = calcHandAngles(dateSource)
   const { dayAngle } = calcHandAngles(timeSource)
   const { dateStr: _dateStr, dayOfWeekStr, progressPercent } = formatDate(dateSource)
-  const timeStr = formatTimeDisplay(timeSource, timeFormat)
+  const timeStr = formatTimeDisplay(timeSource, timeFormat, hourFormat)
+  const isAM = timeSource.getHours() < 12
 
   // Remaining days
   const todayDoy = dayOfYear(dateSource)
@@ -491,12 +502,32 @@ export default function AnnualGauge({
     )
   })
 
-  // ── 7-segment ghost text (shows all segments dimly) ──
-  const seg7Ghost = '88:88:88'
-  const seg7GhostDate = '88.88'
-  const seg7GhostYear = '8888'
-  const seg7GhostPct = '88.8'
-  const seg7GhostDays = '888'
+  // ── Center display: 5-layer layout ──
+  const LAYER_H = 224 / 5  // ~45px per layer
+
+  // Layer 1 & 2: year windows + date windows, tightly spaced
+  const WIN_H = 28
+  const WIN_GAP = 6
+  // Year windows: 4 cells for digits
+  const YWIN_W = 40       // slightly narrower than date windows
+  const YWIN_TOTAL = YWIN_W * 4 + WIN_GAP * 3
+  const YWIN_X0 = CX - YWIN_TOTAL / 2
+  // Date windows: 3 cells
+  const WIN_W = 55
+  const WIN_TOTAL = WIN_W * 3 + WIN_GAP * 2
+  const WIN_X0 = CX - WIN_TOTAL / 2
+
+  // Position layers: L1 and L2 close together, L3 centered
+  const L1_Y = CY - 68     // year windows center
+  const L2_Y = L1_Y + WIN_H + WIN_GAP  // date windows right below (gap = same as cell gap)
+  const L3_Y = CY + 10     // time display — lower center
+
+  // Ghost text for 7-seg
+  const seg7Ghost = timeFormat === 'HH:MM:SS' ? '88:88:88' : '88:88'
+  const yearDigits = String(year).split('')  // ['2','0','2','6']
+  const monthAbbr = MONTH_ABBR[dateSource.getMonth()]
+  const dayNum = String(dateSource.getDate())
+  const dowAbbr = DAY_ABBR[dateSource.getDay()]
 
   return (
     <div className="flex items-center justify-center w-full h-full">
@@ -638,68 +669,98 @@ export default function AnnualGauge({
         </circle>
         <circle cx={CX} cy={CY} r={1} fill={BG} />
 
-        {/* ── Center area: 7-segment digital display ── */}
-        {/* Year — ghost */}
-        <text x={CX} y={CY - 44} fill={FG} opacity={0.04}
-          fontSize="14" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{seg7GhostYear}</text>
-        {/* Year — active */}
-        <text x={CX} y={CY - 44} fill={FG} opacity={0.5}
-          fontSize="14" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{year}</text>
+        {/* ── Center display boundary guide ── */}
+        <circle cx={CX} cy={CY} r={112} fill="none" stroke="#ffffff" strokeWidth={0.5} opacity={0.15} strokeDasharray="3 3" />
 
-        {/* Month.Day — ghost */}
-        <text x={CX} y={CY - 26} fill={FG} opacity={0.04}
-          fontSize="18" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{seg7GhostDate}</text>
-        {/* Month.Day — active */}
-        <text x={CX} y={CY - 26} fill={FG} opacity={0.7}
-          fontSize="18" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{monthStr}.{dayStr}</text>
+        {/* ══════ Layer 1: Year — 4 windowed digits ══════ */}
+        {yearDigits.map((digit, idx) => {
+          const wx = YWIN_X0 + idx * (YWIN_W + WIN_GAP)
+          const wy = L1_Y - WIN_H / 2
+          return (
+            <g key={`ywin-${idx}`}>
+              <rect x={wx} y={wy} width={YWIN_W} height={WIN_H} rx={2}
+                fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" strokeWidth={0.5} />
+              <rect x={wx} y={wy} width={YWIN_W} height={WIN_H} rx={2}
+                fill="url(#cyclops-lens)" />
+              <text x={wx + YWIN_W / 2} y={L1_Y + 1}
+                fill={FG} opacity={0.7} fontSize="18" fontFamily={FONT_DIAL}
+                fontWeight="700" textAnchor="middle" dominantBaseline="central"
+              >{digit}</text>
+            </g>
+          )
+        })}
 
-        {/* Day of week (sans-serif) */}
-        <text x={CX} y={CY - 10} fill={DIM} opacity={0.5}
-          fontSize="9" fontFamily={FONT_SANS} fontWeight="400"
-          textAnchor="middle" dominantBaseline="central" letterSpacing="2"
-        >{dayOfWeekStr}</text>
+        {/* ══════ Layer 2: Date sub-windows ══════ */}
+        <defs>
+          <radialGradient id="cyclops-lens" cx="50%" cy="45%" r="60%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        {[
+          { label: monthAbbr, idx: 0 },
+          { label: dayNum, idx: 1 },
+          { label: dowAbbr, idx: 2 },
+        ].map(({ label, idx }) => {
+          const wx = WIN_X0 + idx * (WIN_W + WIN_GAP)
+          const wy = L2_Y - WIN_H / 2
+          return (
+            <g key={`win-${idx}`}>
+              {/* Window frame */}
+              <rect x={wx} y={wy} width={WIN_W} height={WIN_H} rx={2}
+                fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" strokeWidth={0.5} />
+              {/* Cyclops lens effect */}
+              <rect x={wx} y={wy} width={WIN_W} height={WIN_H} rx={2}
+                fill="url(#cyclops-lens)" />
+              {/* Text */}
+              <text x={wx + WIN_W / 2} y={L2_Y + 1}
+                fill={FG} opacity={0.7} fontSize="14" fontFamily={FONT_SANS}
+                fontWeight="600" textAnchor="middle" dominantBaseline="central"
+                letterSpacing="0.5"
+              >{label}</text>
+            </g>
+          )
+        })}
 
-        {/* Time — ghost */}
-        <text x={CX} y={CY + 8} fill={FG} opacity={0.04}
-          fontSize="18" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{seg7Ghost}</text>
-        {/* Time — active */}
-        <text x={CX} y={CY + 8} fill={FG} opacity={0.7}
-          fontSize="18" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{timeStr}</text>
+        {/* ══════ Layer 3: Time — large, wide ══════ */}
+        {hourFormat === '12h' ? (
+          <>
+            {/* AM/PM indicator — left side */}
+            <text x={CX - 70} y={L3_Y - 7}
+              fill={FG} opacity={isAM ? 0.6 : 0.15} fontSize="8"
+              fontFamily={FONT_SANS} fontWeight="700" textAnchor="end" dominantBaseline="central"
+              letterSpacing="0.5"
+            >AM</text>
+            <text x={CX - 70} y={L3_Y + 7}
+              fill={FG} opacity={!isAM ? 0.6 : 0.15} fontSize="8"
+              fontFamily={FONT_SANS} fontWeight="700" textAnchor="end" dominantBaseline="central"
+              letterSpacing="0.5"
+            >PM</text>
+            {/* Time ghost */}
+            <g transform={`translate(${CX + 8}, ${L3_Y}) scale(1.15, 1) translate(${-(CX + 8)}, ${-L3_Y})`}>
+              <text x={CX + 8} y={L3_Y} fill={FG} opacity={0.04}
+                fontSize="28" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
+              >{seg7Ghost}</text>
+              <text x={CX + 8} y={L3_Y} fill={FG} opacity={0.7}
+                fontSize="28" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
+              >{timeStr}</text>
+            </g>
+          </>
+        ) : (
+          <>
+            {/* 24h: Time — horizontally stretched */}
+            <g transform={`translate(${CX}, ${L3_Y}) scale(1.15, 1) translate(${-CX}, ${-L3_Y})`}>
+              <text x={CX} y={L3_Y} fill={FG} opacity={0.04}
+                fontSize="28" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
+              >{seg7Ghost}</text>
+              <text x={CX} y={L3_Y} fill={FG} opacity={0.7}
+                fontSize="28" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
+              >{timeStr}</text>
+            </g>
+          </>
+        )}
 
-        {/* Separator line */}
-        <line x1={CX - 30} y1={CY + 22} x2={CX + 30} y2={CY + 22}
-          stroke={FG} strokeWidth={0.3} opacity={0.1} />
-
-        {/* Progress % — ghost */}
-        <text x={CX} y={CY + 38} fill={FG} opacity={0.04}
-          fontSize="14" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{seg7GhostPct}</text>
-        {/* Progress % — active */}
-        <text x={CX - 6} y={CY + 38} fill={FG} opacity={0.45}
-          fontSize="14" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{progressPercent.replace('%', '')}</text>
-        <text x={CX + 22} y={CY + 38} fill={DIM} opacity={0.3}
-          fontSize="7" fontFamily={FONT_SANS} textAnchor="start" dominantBaseline="central"
-        >%</text>
-
-        {/* Remaining days — ghost */}
-        <text x={CX - 14} y={CY + 54} fill={FG} opacity={0.04}
-          fontSize="12" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{seg7GhostDays}</text>
-        {/* Remaining days — active */}
-        <text x={CX - 14} y={CY + 54} fill={FG} opacity={0.35}
-          fontSize="12" fontFamily={FONT_7SEG} textAnchor="middle" dominantBaseline="central"
-        >{remainingDays}</text>
-        <text x={CX + 8} y={CY + 54} fill={DIM} opacity={0.2}
-          fontSize="6" fontFamily={FONT_SANS} textAnchor="start" dominantBaseline="central"
-          letterSpacing="0.5"
-        >days left</text>
+        {/* ══════ Layer 4-5: TBD ══════ */}
       </svg>
     </div>
   )

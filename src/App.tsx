@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import AnnualGauge from './components/AnnualGauge'
-import type { TimeFormat, SpectrumDensity } from './components/AnnualGauge'
+import type { TimeFormat, HourFormat, SpectrumDensity } from './components/AnnualGauge'
 import GearIcon from './components/GearIcon'
 import SettingsPanel from './components/SettingsPanel'
 import { usePersistedState } from './hooks/usePersistedState'
@@ -26,6 +26,7 @@ function App() {
   const [startMonth, setStartMonth] = usePersistedState('ag-startMonth', 1)
   const [timeFormat, setTimeFormat] = usePersistedState<TimeFormat>('ag-timeFormat', 'HH:MM:SS')
   const [spectrumDensity, setSpectrumDensity] = usePersistedState<SpectrumDensity>('ag-spectrumDensity', 288)
+  const [hourFormat, setHourFormat] = usePersistedState<HourFormat>('ag-hourFormat', '24h')
   const [location, setLocation] = usePersistedState<Location>('ag-location', DEFAULT_LOCATION)
 
   // Debug (not persisted)
@@ -97,6 +98,8 @@ function App() {
     onTimeFormatChange: setTimeFormat,
     spectrumDensity,
     onSpectrumDensityChange: setSpectrumDensity,
+    hourFormat,
+    onHourFormatChange: setHourFormat,
     location,
     onLocationChange: setLocation,
     debugMode,
@@ -118,6 +121,7 @@ function App() {
           overrideDate={overrideDate}
           overrideDateOnly={overrideDateOnly}
           timeFormat={timeFormat}
+          hourFormat={hourFormat}
           spectrumDensity={spectrumDensity}
           location={location}
         />
