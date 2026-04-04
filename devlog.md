@@ -634,3 +634,166 @@ debugDate の初期値を今日の日付に設定（毎回入力不要に）
 
 - ダミー背景が入った状態（本番背景はペンディング）
 - 計器部分のクオリティアップを優先中
+
+---
+
+## 2026-04-04 — Session 10: バゲットカット磨き込み + 文字盤 + suncalc + 中央表示リデザイン
+
+### 実施内容
+
+#### 1. バゲットカットセルのハイライト改善
+
+**エッジハイライト（A）:**
+- ファセットポリゴン全辺のstrokeをやめ、外側輪郭の5本のパス（edgeTop/edgeLeft/edgeRight/edgeTopLeft/edgeTopRight）のみをstroke
+- bottomエッジは完全除去（「コの字」問題の解消）
+
+**スペキュラー変更:**
+- 白玉（radialGradient）→ 削除。中央面はディレクショナルグラデーションのみに
+- テキスト可読性を優先し、ベベルファセット面にハイライトを集中
+
+**テーパー形状（全体フレア）:**
+- 旧: FLAREがトップベベルのみに効いていた（釘/キノコ形状）
+- 新: セル全体が台形（外側が広く内側が狭い）にテーパー
+- FLARE=1.5px、baguettePath/facetPathsを全面書き換え
+- 側面が斜めにテーパーし、円周上で自然なウェッジ感
+
+**ファセット7面分割:**
+- 旧: top面が遷移部の「耳」を含んでいた
+- 新: top/topLeft(法線315°)/topRight(法線45°)/left/right/bottom/center の7面に分離
+- 各面が独立した光源応答を持ち、面取り面が見える
+
+**base opacity引き上げ:**
+- today: 0.16→0.22、past: 0.09→0.14、future: 0.025→0.04
+- 中央面グラデーション: base*2.2〜base*0.8 に強化
+- 刻印テキスト: fontWeight 500→600、highlight opacity 0.15→0.25
+
+**刻印テキスト位置:**
+- CELL_H * 0.5（距離的中央）→ CELL_H * 0.42（重心寄り、外側に移動）
+
+#### 2. 月ラベル（文字盤）の全面リデザイン
+
+**フォント:**
+- Inter 9px weight500 → **Chakra Petch 40px weight600**（Google Fonts追加）
+- `scale(1.1, 0.88)` で横広プロポーション（正方形に近いフォント要求に対応）
+
+**配置:**
+- 回転廃止 → 全数字を水平固定（回転すると読めないため）
+- LABEL_R - 18 = 149に配置（目盛りとの十分なマージン）
+
+**ベベル加工:**
+- 専用SVGフィルタ `dial-bevel` / `dial-highlight` を作成
+  - dial-bevel: feOffset(-1.2,-1.2) + blur(1.0) — 大型テキスト用の影
+  - dial-highlight: feOffset(+1.0,+1.0) + feFlood(white,0.4) — 光のエッジ
+- 3層構造: 黒影(opacity 0.6) + 本体FG(opacity 0.65) + 白ハイライト(opacity 0.2)
+
+**経過月ディミング:**
+- 過去月: opacity 0.22（暗く沈む）
+- 今月: opacity 0.75（最も明るい）
+- 未来月: opacity 0.65（通常の明るさ）
+- パッと見で「今年のどこにいるか」が直感的に分かる
+
+#### 3. suncalc導入 + ロケーション設定
+
+**パッケージ:**
+- `suncalc` + `@types/suncalc` をインストール
+- `src/utils/solarUtils.ts` を新規作成
+  - getSolarTimes(): 日の出/日の入り/薄明/ゴールデンアワー等
+  - timeToAngle(): 時刻→24時間角度変換
+  - getMoonInfo(): 月齢・月相・emoji
+  - DEFAULT_LOCATION: 東京(35.68, 139.65)
+
+**ロケーション設定:**
+- `src/hooks/usePersistedState.ts` — LocalStorage永続化フック
+- 設定パネルにLOCATIONセクション追加
+  - プリセット都市選択（Tokyo/Osaka/NY/London/Paris/Sydney/Singapore）
+  - ブラウザGeolocation API自動検出（初回のみ）
+  - 手動緯度経度入力
+- 全設定をLocalStorageに永続化（startMonth/timeFormat/spectrumDensity/hourFormat/location）
+
+#### 4. スペクトラムバー昼夜色分け
+
+**バーの色:**
+- 日中（sunrise〜sunset）: ACCENT (#c0785a) — 暖色銅
+- 夜間: ACCENT_NIGHT (#5a7a9a) — 青灰色
+- シャープな境界（トワイライトグラデーション削除）
+- グラデーション（距離ベースの減衰）も削除 → 均一opacity 0.55
+
+**日の出/日の入りマーカー:**
+- 位置: 内側目盛りとスペクトラムバーの隙間（SOLAR_GAP_R）
+- 表記: ▲ 05:28 / ▼ 18:04（記号→時刻の順、時計回り統一）
+- SOLAR_MARKER_OFFSET = 5°（記号とテキストの間隔）
+
+**時刻テキスト:**
+- 昼夜に連動した色（ACCENT/ACCENT_NIGHT）
+- フリップ境界: 左右(180°)→上下(90°-270°)に変更
+- 縦位置: SPEC_R_MID -3px で帯の中央に
+- TIME_OFFSET_DEG: 4°→2°（バー先端との距離を縮小）
+
+#### 5. 中央表示リデザイン（5層構造）
+
+**Layer 1: 年（CY-68）**
+- [2][0][2][6] の4つの枠付きセル
+- YWIN_W=40、サイクロップレンズ効果（radialGradient）
+- Chakra Petch 18px weight700
+
+**Layer 2: 月・日・曜日（L1 + WIN_H + WIN_GAP）**
+- [Apr][4][SAT] の3つの枠付きセル
+- WIN_W=55、WIN_H=28、WIN_GAP=6
+- Layer 1 のすぐ下に密着配置
+
+**Layer 3: 時刻（CY+10）**
+- DSEG7 Classic 28px + scale(1.15, 1) で横伸ばし
+- 24h/12h切替対応（設定パネルのdisabled解除）
+- 12hモード: 左にAM/PM縦表示（該当=0.6、非該当=0.15）
+- ゴースト表示（消灯セグメント opacity 0.04）
+
+**Layer 4-5: サブディスプレイ（L3+22 〜 CY+105）**
+- 枠付きエリア（SUB_W=177、サイクロップレンズ）
+- 3ページ自動遷移（5秒間隔）: ロケーション/気温/天気
+- ページインジケーター ●○○（DOT_Y = SUB_BOTTOM + 8）
+- 右下・左下の角はガイド円を超えてOK
+- 現時点はプレースホルダーテキスト
+
+#### 6. GitHub Pages デプロイ
+
+- `.github/workflows/deploy.yml` を作成
+- GitHub Actions でビルド→デプロイ
+- URL: https://tipsytapstudio.github.io/annual-gazer/
+
+### レイヤー配置（現在）
+
+```
+外側セル      R=288（外端）、H=48、W=16、FLARE=1.5（テーパー）
+              ↓ 12px gap
+    日の出/入りマーカー  R=206.5（SOLAR_GAP_R）
+スペクトラム  R=228→214（線長14px）、288本、昼夜色分け
+              ↓ 15px gap
+内側目盛り    R=199（外端、内向き）
+月ラベル      R=149（Chakra Petch 40px、水平固定、経過月ディミング）
+境界ガイド    R=112（中央表示の使用可能領域）
+中央表示      5層構造（年/日付/時刻/サブディスプレイ）
+```
+
+### 次回やること
+
+1. **中央表示の微調整**
+   - フォント・レイアウトの細部詰め
+   - サブディスプレイ内のドット表示風の表現検討
+   - ページ遷移アニメーション（フェード/スライド）
+
+2. **サブディスプレイの実データ実装**
+   - Open-Meteo API連携（天気・気温・最高最低気温）
+   - suncalcデータ表示（日の出/入り時刻、日照時間）
+   - 月齢表示
+
+3. **開始月カスタマイズ**（UIあり、ロジック未接続）
+
+4. **ダミー背景の扱い**（本番背景はペンディング中）
+
+### 技術メモ
+
+- Chakra Petch: Google Fontsからwght@500;600;700をロード
+- DSEG7 Classic: node_modulesからLight(300)/Regular(400)をローカルロード
+- suncalc: 純粋計算（API不要）、緯度経度ベース
+- Open-Meteo: APIキー不要、CORS対応、GitHub Pagesで動作可能
+- usePersistedState: LocalStorage永続化カスタムフック
